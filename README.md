@@ -56,3 +56,7 @@ token from the browser.
   and to your NAS.
 - The first request after the NAS has been idle can take a few seconds while DSM wakes up.
 - Requires DSM 7 with the Download Station package installed.
+
+## Licence
+
+[MIT](LICENSE)
