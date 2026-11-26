@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Send to Download Station",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sends magnet and .torrent links (including Jackett download links) straight to Synology Download Station.",
   "permissions": ["storage", "contextMenus", "webRequest", "scripting"],
   "host_permissions": ["<all_urls>"],
