@@ -31,10 +31,9 @@
   document.addEventListener(
     'click',
     (e) => {
-      // Plain left click only; hold Alt to get the browser's normal behaviour.
       // Orphaned copy left over from before an extension reload: step aside.
       if (!chrome.runtime?.id) return;
-      if (!intercept || e.button !== 0 || e.altKey || e.defaultPrevented) return;
+      if (!intercept || !isUserClick(e)) return;
       const a = e.composedPath().find((n) => n instanceof HTMLAnchorElement && n.href);
       if (!a || !isTorrentLink(a.href)) return;
 
