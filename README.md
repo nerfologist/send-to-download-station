@@ -50,7 +50,11 @@ token from the browser.
 ## Good to know
 
 - The password is stored unencrypted in the browser profile. Use a dedicated DSM user that
-  only has the Download Station permission.
+  only has the Download Station permission and Read/Write on the destination folder.
+- That user needs its own default destination in Download Station, even when the extension
+  sets one: without it, Download Station accepts magnet links but leaves them on "Waiting"
+  forever. If the user is denied DSM, allow DSM briefly, log in as that user, set
+  **Download Station > Settings > Location**, then deny DSM again.
 - The extension needs access to all sites: it has to see link clicks on any page and
   download `.torrent` files from any host. It only talks to the sites you click links on
   and to your NAS.

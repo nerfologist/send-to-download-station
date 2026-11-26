@@ -207,24 +207,32 @@ async function send(url) {
 }
 
 function create(settings, item, s) {
-  {
-    let body;
-    const fields = {
-      api: 'SYNO.DownloadStation.Task',
-      version: '3',
-      method: 'create',
-      _sid: s,
-    };
-    if (settings.destination) fields.destination = settings.destination;
-    if (item.file) {
-      body = new FormData();
-      for (const [k, v] of Object.entries(fields)) body.append(k, v);
-      body.append('file', item.file, item.name); // must be the last part
-    } else {
-      body = new URLSearchParams({ ...fields, uri: item.uri });
-    }
-    return call(settings, 'DownloadStation/task.cgi', body, TASK_ERRORS);
+  if (item.file) {
+    // .torrent uploads go through the DownloadStation2 API, the one DSM's own UI uses:
+    // the legacy task.cgi upload answers "invalid parameter" (101) on current Download
+    // Station versions. DS2 wants JSON-encoded values and the session id in the query
+    // string (in the multipart body it answers "invalid session"). An empty destination
+    // means the user's default folder.
+    const body = new FormData();
+    body.append('api', 'SYNO.DownloadStation2.Task');
+    body.append('version', '2');
+    body.append('method', 'create');
+    body.append('type', '"file"');
+    body.append('file', '["torrent"]');
+    body.append('destination', JSON.stringify(settings.destination || ''));
+    body.append('create_list', 'false');
+    body.append('torrent', item.file, item.name); // must be the last part
+    return call(settings, `entry.cgi?_sid=${encodeURIComponent(s)}`, body, TASK_ERRORS);
   }
+  const fields = {
+    api: 'SYNO.DownloadStation.Task',
+    version: '3',
+    method: 'create',
+    _sid: s,
+    uri: item.uri,
+  };
+  if (settings.destination) fields.destination = settings.destination;
+  return call(settings, 'DownloadStation/task.cgi', new URLSearchParams(fields), TASK_ERRORS);
 }
 
 // Toolbar icon: grey = not connected yet, green = last NAS call worked, red = it failed.
