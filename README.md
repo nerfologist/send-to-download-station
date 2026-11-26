@@ -39,6 +39,9 @@ The settings page opens after installation (later: click the toolbar icon).
    example `downloads/torrents`. Leave empty to use Download Station's default.
 4. Click **Save & test**.
 
+Use a dedicated, restricted DSM account rather than your own: see
+[A dedicated DSM user](#a-dedicated-dsm-user).
+
 If the account uses 2-factor authentication, you are asked for a code once. The browser is
 then registered in DSM as a trusted device named "Brave - Send to Download Station".
 
@@ -47,17 +50,38 @@ then registered in DSM as a trusted device named "Brave - Send to Download Stati
 **Disconnect** logs the extension out and deletes the saved password and trusted-device
 token from the browser.
 
+## A dedicated DSM user
+
+The extension stores the password unencrypted in the browser profile, so give it an account
+that can do nothing except add downloads. Create it in **Control Panel > User & Group**:
+
+1. **User Groups**: leave it in `users` only, never in `administrators`.
+2. **Applications**: allow **Download Station** and deny everything else, **DSM** included.
+   The extension logs in with a Download Station session, so it works without DSM access.
+3. **Permissions**: Read/Write on the destination folder, No Access everywhere else. Check
+   the **Preview** column, not only your ticks: every user belongs to `users`, and whatever
+   that group grants (often Read Only on `docker`, custom rules on Synology Drive's folder)
+   applies to this user as well. Tick **No Access** on those rows to override it.
+4. **Destination**: give downloads a shared folder of their own (for example `Incoming`,
+   with Read/Write for this user and for you). The user cannot write into another user's
+   home folder unless it can see every home folder.
+5. **Default destination**: the user needs its own default folder in Download Station,
+   even though the extension sends one. Without it, magnet links are accepted but stay on
+   "Waiting" forever. Allow DSM for a moment, log in as the
+   user, set **Download Station > Settings > Location** (BitTorrent and eMule), log out
+   and deny DSM again.
+
+Tasks it adds show up in Download Station for every administrator, with the dedicated user
+as owner, so you can keep managing them from your own account.
+
 ## Good to know
 
-- The password is stored unencrypted in the browser profile. Use a dedicated DSM user that
-  only has the Download Station permission and Read/Write on the destination folder.
-- That user needs its own default destination in Download Station, even when the extension
-  sets one: without it, Download Station accepts magnet links but leaves them on "Waiting"
-  forever. If the user is denied DSM, allow DSM briefly, log in as that user, set
-  **Download Station > Settings > Location**, then deny DSM again.
 - The extension needs access to all sites: it has to see link clicks on any page and
   download `.torrent` files from any host. It only talks to the sites you click links on
   and to your NAS.
+- Prefer the `.torrent` link over the magnet link for Internet Archive results. Their
+  torrents download mostly from archive.org's own servers, and a magnet link does not carry
+  that address, so it may never find a source.
 - The first request after the NAS has been idle can take a few seconds while DSM wakes up.
 - Requires DSM 7 with the Download Station package installed.
 
