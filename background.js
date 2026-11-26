@@ -1,4 +1,4 @@
-import { login, logout, normalizeSettings, send } from './lib/ds.js';
+import { login, logout, normalizeSettings, recordRedirect, send } from './lib/ds.js';
 
 const DEFAULTS = {
   nasUrl: '',
@@ -22,7 +22,7 @@ const redirects = new Map();
 chrome.webRequest.onBeforeRedirect.addListener(
   (d) => {
     if (d.tabId === -1 && d.initiator === `chrome-extension://${chrome.runtime.id}`) {
-      redirects.set(d.url, d.redirectUrl);
+      recordRedirect(redirects, d.url, d.redirectUrl);
     }
   },
   { urls: ['<all_urls>'] }

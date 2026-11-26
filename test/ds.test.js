@@ -8,6 +8,7 @@ import {
   MAX_TORRENT_BYTES,
   normalizeSettings,
   readTorrent,
+  recordRedirect,
   resolve,
   send,
   TASK_ERRORS,
@@ -160,6 +161,20 @@ describe('withSession', () => {
   });
 });
 
+describe('recordRedirect', () => {
+  it('drops the oldest entries above the limit', () => {
+    const r = new Map();
+    for (const n of [1, 2, 3, 4]) recordRedirect(r, `http://${n}`, MAGNET, 3);
+    expect([...r.keys()]).toEqual(['http://2', 'http://3', 'http://4']);
+  });
+
+  it('counts a refreshed entry as new', () => {
+    const r = new Map();
+    for (const n of [1, 2, 3, 1, 4]) recordRedirect(r, `http://${n}`, `to-${n}`, 3);
+    expect([...r.keys()]).toEqual(['http://3', 'http://1', 'http://4']);
+  });
+});
+
 describe('readTorrent', () => {
   // A response whose body would go on for ever, to prove that reading stops.
   const endless = (firstByte, chunkSize = 1024) => {
@@ -285,6 +300,20 @@ describe('resolve', () => {
       throw new TypeError('Failed to fetch');
     });
     await expect(resolve('http://nas:9117/dl/x/', redirects)).resolves.toEqual({ uri: MAGNET });
+  });
+
+  it('keeps the redirects of two links that are resolved at the same time', async () => {
+    const other = MAGNET.replace('dn=x', 'dn=y');
+    const targets = { 'http://nas:9117/dl/a/': MAGNET, 'http://nas:9117/dl/b/': other };
+    const redirects = new Map();
+    fetchMock.mockImplementation(async (url) => {
+      recordRedirect(redirects, url, targets[url]);
+      await new Promise((r) => setTimeout(r, url.endsWith('/a/') ? 20 : 5));
+      throw new TypeError('Failed to fetch');
+    });
+    const [a, b] = await Promise.all(Object.keys(targets).map((u) => resolve(u, redirects)));
+    expect(a).toEqual({ uri: MAGNET });
+    expect(b).toEqual({ uri: other });
   });
 });
 
