@@ -5,7 +5,9 @@ import {
   DsError,
   login,
   magnetFromRedirects,
+  MAX_TORRENT_BYTES,
   normalizeSettings,
+  readTorrent,
   resolve,
   send,
   TASK_ERRORS,
@@ -155,6 +157,54 @@ describe('withSession', () => {
     const state = { sid: null };
     await withSession(state, SETTINGS, async (sid) => sid);
     expect(state.sid).toBe('new');
+  });
+});
+
+describe('readTorrent', () => {
+  // A response whose body would go on for ever, to prove that reading stops.
+  const endless = (firstByte, chunkSize = 1024) => {
+    const calls = { pulls: 0, cancelled: false };
+    const body = new ReadableStream({
+      pull(controller) {
+        calls.pulls++;
+        controller.enqueue(new Uint8Array(chunkSize).fill(firstByte));
+      },
+      cancel() {
+        calls.cancelled = true;
+      },
+    });
+    return { res: new Response(body), calls };
+  };
+
+  it('stops downloading after the first chunk when it is not a torrent', async () => {
+    const { res, calls } = endless(0x3c); // "<"
+    await expect(readTorrent(res)).resolves.toBeNull();
+    expect(calls.cancelled).toBe(true);
+    expect(calls.pulls).toBeLessThanOrEqual(2);
+  });
+
+  it('stops downloading once the file is too large to be a torrent', async () => {
+    const chunk = 1024 * 1024;
+    const { res, calls } = endless(0x64, chunk); // "d"
+    await expect(readTorrent(res)).resolves.toBeNull();
+    expect(calls.cancelled).toBe(true);
+    expect(calls.pulls).toBeLessThanOrEqual(MAX_TORRENT_BYTES / chunk + 2);
+  });
+
+  it('puts a torrent that arrives in several chunks back together', async () => {
+    const parts = ['d8:ann', 'ounce0', ':e'].map((s) => new TextEncoder().encode(s));
+    const body = new ReadableStream({
+      pull(controller) {
+        parts.length ? controller.enqueue(parts.shift()) : controller.close();
+      },
+    });
+    const file = await readTorrent(new Response(body));
+    expect(await file.text()).toBe('d8:announce0:e');
+  });
+
+  it('returns null for an empty response', async () => {
+    await expect(readTorrent(new Response(''))).resolves.toBeNull();
+    await expect(readTorrent(new Response(null))).resolves.toBeNull();
   });
 });
 
