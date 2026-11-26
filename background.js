@@ -153,9 +153,11 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== 'send-to-ds' || !info.linkUrl) return;
+  // The id lets the page update this send's own toast when several are in flight.
+  const id = crypto.randomUUID();
   const toast = (payload) =>
     tab?.id != null &&
-    chrome.tabs.sendMessage(tab.id, { type: 'toast', ...payload }).catch(() => {});
+    chrome.tabs.sendMessage(tab.id, { type: 'toast', id, ...payload }).catch(() => {});
   toast({ ok: true, message: 'Sending to Download Station…', pending: true });
   const result = await handle({ type: 'send', url: info.linkUrl });
   toast(result);
