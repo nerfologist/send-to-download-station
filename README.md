@@ -22,7 +22,8 @@ don't have to copy and paste them into DSM.
 
 The extension is not in the Chrome Web Store; load it unpacked:
 
-1. Download or clone this repository.
+1. Download the zip from the [latest release](https://github.com/nerfologist/send-to-download-station/releases/latest)
+   and unzip it, or clone this repository.
 2. Open `brave://extensions` (or `chrome://extensions`) and enable **Developer mode**.
 3. Click **Load unpacked** and select the repository folder.
 
