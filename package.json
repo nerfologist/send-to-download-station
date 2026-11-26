@@ -1,0 +1,12 @@
+{
+  "name": "send-to-download-station",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "vitest": "^5.1.2"
+  }
+}

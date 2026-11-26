@@ -5,20 +5,6 @@
     if (changes.intercept) intercept = changes.intercept.newValue;
   });
 
-  function isTorrentLink(href) {
-    if (/^magnet:/i.test(href)) return true;
-    let u;
-    try {
-      u = new URL(href);
-    } catch {
-      return false;
-    }
-    if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
-    if (/\.torrent$/i.test(u.pathname)) return true;
-    // Jackett download links: /dl/<indexer>/?jackett_apikey=...&path=...&file=...
-    return u.pathname.includes('/dl/') && u.searchParams.has('jackett_apikey');
-  }
-
   let toastEl = null;
   let toastTimer = null;
   function toast({ ok, message, pending }) {

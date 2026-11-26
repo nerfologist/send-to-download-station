@@ -5,11 +5,11 @@
   "description": "Sends magnet and .torrent links (including Jackett download links) straight to Synology Download Station.",
   "permissions": ["storage", "contextMenus", "webRequest", "scripting"],
   "host_permissions": ["<all_urls>"],
-  "background": { "service_worker": "background.js" },
+  "background": { "service_worker": "background.js", "type": "module" },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["lib/links.js", "content.js"],
       "run_at": "document_start",
       "all_frames": true
     }

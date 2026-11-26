@@ -85,6 +85,36 @@ as owner, so you can keep managing them from your own account.
 - The first request after the NAS has been idle can take a few seconds while DSM wakes up.
 - Requires DSM 7 with the Download Station package installed.
 
+## Development
+
+The Download Station client lives in `lib/ds.js` and has no browser dependencies, so the
+same code runs in the extension, the unit tests and the smoke test. `lib/links.js` decides
+which links are intercepted.
+
+```sh
+npm install
+npm test         # unit tests (Vitest), fetch is mocked
+npm run smoke    # against a real NAS, see below
+```
+
+The unit tests check request shapes and parsing, but they cannot tell how Download Station
+really behaves. The smoke test can: it adds a magnet link and a `.torrent` file through
+`lib/ds.js`, checks that Download Station starts both, then deletes them. Run it after
+Download Station or DSM updates:
+
+```sh
+read -s DS_PASSWORD && export DS_PASSWORD
+DS_URL=https://nas:5001 DS_USER=download_station npm run smoke
+```
+
+Optional variables: `DS_DESTINATION` (default: the user's default folder), `DS_TORRENT_URL`
+(the `.torrent` to upload, an Internet Archive torrent by default) and, for a NAS with a
+private certificate, `NODE_EXTRA_CA_CERTS=/path/to/rootCA.pem`.
+
+`node_modules` sits inside the extension folder. Browsers refuse to load an unpacked
+extension containing files whose names start with `_`, so if a future dependency adds one,
+load the extension from a copy without `node_modules`.
+
 ## Licence
 
 [MIT](LICENSE)
