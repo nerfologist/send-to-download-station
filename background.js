@@ -1,4 +1,4 @@
-import { login, logout, normalizeSettings, recordRedirect, send } from './lib/ds.js';
+import { login, logout, normalizeSettings, recordRedirect, send, storedState } from './lib/ds.js';
 
 const DEFAULTS = {
   nasUrl: '',
@@ -9,8 +9,9 @@ const DEFAULTS = {
   deviceId: '',
 };
 
-// Cached DSM session id; reset when the settings change.
-const state = { sid: null };
+// Cached DSM session id; reset when the settings change. Kept in session storage (memory
+// only, not readable by content scripts) so it survives the worker going to sleep.
+const state = storedState(chrome.storage.session);
 
 async function getSettings() {
   return normalizeSettings(await chrome.storage.local.get(DEFAULTS));
@@ -84,6 +85,7 @@ async function disconnect() {
 }
 
 async function handle(msg) {
+  await state.ready;
   if (msg.type === 'disconnect') return disconnect();
   const result = await handleInner(msg);
   setStatus(result.ok ? 'ok' : 'error', result.ok ? '' : result.message);

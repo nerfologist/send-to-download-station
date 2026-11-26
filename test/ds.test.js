@@ -11,6 +11,7 @@ import {
   recordRedirect,
   resolve,
   send,
+  storedState,
   TASK_ERRORS,
   TIMEOUT_MS,
   torrentName,
@@ -158,6 +159,63 @@ describe('withSession', () => {
     const state = { sid: null };
     await withSession(state, SETTINGS, async (sid) => sid);
     expect(state.sid).toBe('new');
+  });
+});
+
+describe('storedState', () => {
+  const fakeArea = (initial = {}) => {
+    const data = { ...initial };
+    return {
+      data,
+      get: vi.fn(async (defaults) => ({ ...defaults, ...data })),
+      set: vi.fn(async (items) => void Object.assign(data, items)),
+      remove: vi.fn(async (key) => void delete data[key]),
+    };
+  };
+
+  it('restores the session a previous worker stored', async () => {
+    const state = storedState(fakeArea({ sid: 'kept' }));
+    await state.ready;
+    expect(state.sid).toBe('kept');
+  });
+
+  it('starts without a session when nothing is stored or the area fails', async () => {
+    const empty = storedState(fakeArea());
+    const broken = storedState({ get: () => Promise.reject(new Error('no access')) });
+    await Promise.all([empty.ready, broken.ready]);
+    expect(empty.sid).toBeNull();
+    expect(broken.sid).toBeNull();
+  });
+
+  it('writes a new session through and removes a cleared one', async () => {
+    const area = fakeArea();
+    const state = storedState(area);
+    await state.ready;
+    state.sid = 's1';
+    expect(area.set).toHaveBeenCalledWith({ sid: 's1' });
+    state.sid = null;
+    expect(area.remove).toHaveBeenCalledWith('sid');
+  });
+
+  it('lets a reset made while loading win over the stored session', async () => {
+    const state = storedState(fakeArea({ sid: 'old' }));
+    state.sid = null; // settings changed before the stored value arrived
+    await state.ready;
+    expect(state.sid).toBeNull();
+  });
+
+  it('works as the state of withSession', async () => {
+    fetchMock.mockResolvedValue(ok({ sid: 'new' }));
+    const area = fakeArea();
+    const state = storedState(area);
+    await state.ready;
+    await withSession(state, SETTINGS, async (sid) => sid);
+    expect(area.data.sid).toBe('new');
+    // A new worker picks it up and does not log in again.
+    const next = storedState(area);
+    await next.ready;
+    await expect(withSession(next, SETTINGS, async (sid) => sid)).resolves.toBe('new');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
 
