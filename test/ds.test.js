@@ -9,6 +9,7 @@ import {
   resolve,
   send,
   TASK_ERRORS,
+  TIMEOUT_MS,
   torrentName,
   withSession,
 } from '../lib/ds.js';
@@ -59,6 +60,24 @@ describe('call', () => {
     fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     await expect(call(SETTINGS, 'x', null, {})).rejects.toThrow(
       'cannot reach https://nas:5001 (Failed to fetch)'
+    );
+  });
+});
+
+describe('call timeout', () => {
+  it('gives every NAS request a deadline', async () => {
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    fetchMock.mockResolvedValue(ok({}));
+    await call(SETTINGS, 'x', null, {});
+    expect(timeout).toHaveBeenCalledWith(TIMEOUT_MS);
+    expect(fetchMock.mock.calls[0][1].signal).toBe(timeout.mock.results[0].value);
+    timeout.mockRestore();
+  });
+
+  it('says the NAS is not reachable when the deadline passes', async () => {
+    fetchMock.mockRejectedValue(new DOMException('The operation timed out.', 'TimeoutError'));
+    await expect(call(SETTINGS, 'x', null, {})).rejects.toThrow(
+      'NAS not reachable at https://nas:5001 (no answer in 20 s): is it switched on?'
     );
   });
 });
